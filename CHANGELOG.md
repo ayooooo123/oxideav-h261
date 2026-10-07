@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `Decoder::output_video_dimensions` / `output_pixel_format`: the QCIF or
+  CIF size of the picture last returned (before the first, the next
+  queued one), `Yuv420P`. A QCIF ↔ CIF change is reported with the first
+  picture that has it.
+
 ### Fixed
 
 - `packetize_mb_fragmented` (RFC 4587 §4.2 RECOMMENDED MB-level

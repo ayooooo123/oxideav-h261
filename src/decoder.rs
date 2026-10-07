@@ -74,6 +74,9 @@ pub struct H261Decoder {
     /// clone) so `send_packet` calls that decode multiple pictures
     /// before the consumer drains don't exhaust the pool.
     ready_frames: VecDeque<(Picture, Option<i64>)>,
+    /// Luma size of the picture last handed out by `receive_frame` /
+    /// `receive_arena_frame`.
+    last_output: Option<(u32, u32)>,
     pending_pts: Option<i64>,
     pending_tb: TimeBase,
     eof: bool,
@@ -146,6 +149,7 @@ impl H261Decoder {
             codec_id,
             buffer: Vec::new(),
             ready_frames: VecDeque::new(),
+            last_output: None,
             pending_pts: None,
             pending_tb: TimeBase::new(1, 30_000),
             eof: false,
@@ -787,6 +791,7 @@ impl Decoder for H261Decoder {
 
     fn receive_frame(&mut self) -> Result<Frame> {
         if let Some((pic, pts)) = self.ready_frames.pop_front() {
+            self.last_output = Some(picture_size(&pic));
             // Build a heap-backed VideoFrame from the picture (the
             // legacy `Frame::Video` API). No arena pool involved —
             // straight Picture → Vec<u8> per plane.
@@ -802,6 +807,7 @@ impl Decoder for H261Decoder {
 
     fn receive_arena_frame(&mut self) -> Result<oxideav_core::arena::sync::Frame> {
         if let Some((pic, pts)) = self.ready_frames.pop_front() {
+            self.last_output = Some(picture_size(&pic));
             // Lease one arena from the pool, copy the YUV planes in,
             // and freeze it into an `arena::sync::Frame`. The arena
             // slot stays checked out until the caller drops the last
@@ -817,9 +823,22 @@ impl Decoder for H261Decoder {
         }
     }
 
+    /// The picture last returned; before the first, the next queued one.
+    /// QCIF and CIF pictures may alternate (§4.2.1.3 source format).
+    fn output_video_dimensions(&self) -> Option<(u32, u32)> {
+        self.last_output
+            .or_else(|| self.ready_frames.front().map(|(pic, _)| picture_size(pic)))
+    }
+
+    /// Every picture is 4:2:0 at 8 bits.
+    fn output_pixel_format(&self) -> Option<PixelFormat> {
+        self.output_video_dimensions().map(|_| PixelFormat::Yuv420P)
+    }
+
     fn reset(&mut self) -> Result<()> {
         self.buffer.clear();
         self.ready_frames.clear();
+        self.last_output = None;
         self.pending_pts = None;
         self.eof = false;
         self.reference = None;
@@ -835,6 +854,12 @@ impl Decoder for H261Decoder {
         self.eof = true;
         self.process()
     }
+}
+
+/// The luma size of `pic`.
+fn picture_size(pic: &Picture) -> (u32, u32) {
+    // QCIF or CIF (§3.1): both fit in u32.
+    (pic.width as u32, pic.height as u32)
 }
 
 /// Build a `CodecParameters` from a parsed picture header.
