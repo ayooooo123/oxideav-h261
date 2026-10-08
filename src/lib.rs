@@ -130,6 +130,9 @@ pub mod quant;
 pub mod rtcp;
 pub mod rtp;
 pub mod sdp;
+/// FFmpeg's C simple IDCT (LGPL-2.1-or-later, see the file's notice),
+/// which [`idct::idct_intra`] and [`idct::idct_signed`] reconstruct with.
+pub mod simple_idct;
 pub mod start_code;
 #[doc(hidden)]
 pub mod tables;

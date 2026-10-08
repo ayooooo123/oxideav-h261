@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Blocks are reconstructed with FFmpeg's integer IDCT** (PearTube fork;
+  `src/simple_idct.rs`, a port of FFmpeg 2da55bf
+  `libavcodec/simple_idct_template.c`, LGPL-2.1-or-later; the crate is now
+  `MIT AND LGPL-2.1-or-later`): `idct::idct_intra` and `idct::idct_signed`
+  use it in place of the `f32` transform, in the decoder and in the
+  encoder's reconstruction alike. Every frame now equals FFmpeg's decode
+  (its C path, `-idct simple`): a 90-frame QCIF clip and FFmpeg encodes at
+  QCIF and CIF, high and low quality. Before, no frame matched.
+
 ### Added
 
 - `Decoder::output_video_dimensions` / `output_pixel_format`: the QCIF or

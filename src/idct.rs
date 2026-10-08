@@ -101,32 +101,24 @@ pub fn idct8x8(block: &mut [f32; 64]) {
     }
 }
 
-/// Convenience wrapper: IDCT from signed integer coefficients into clipped
-/// signed i16 residual samples, range `[-256, 255]`.
+/// IDCT from signed integer coefficients into clipped residual samples,
+/// range `[-256, 255]`, with FFmpeg's integer simple IDCT
+/// ([`crate::simple_idct`], LGPL): the residual FFmpeg's
+/// `idct_add` sums onto the prediction (clipping it to `[-256, 255]` first
+/// does not change the clipped sum).
 pub fn idct_signed(coeffs: &[i32; 64], out: &mut [i32; 64]) {
-    let mut f = [0.0f32; 64];
-    for i in 0..64 {
-        f[i] = coeffs[i] as f32;
-    }
-    idct8x8(&mut f);
-    for i in 0..64 {
-        let v = f[i].round() as i32;
-        out[i] = v.clamp(-256, 255);
+    for (o, v) in out.iter_mut().zip(crate::simple_idct::simple_idct(coeffs)) {
+        *o = v.clamp(-256, 255);
     }
 }
 
-/// Convenience wrapper: IDCT from signed integer coefficients into 8-bit
-/// intra samples `[0, 255]`. The caller's coefficients must already include
-/// the DC offset (INTRA DC of 1024 corresponds to a spatial mean of 128).
+/// IDCT from signed integer coefficients into 8-bit intra samples
+/// `[0, 255]`, with FFmpeg's integer simple IDCT (its `idct_put`). The
+/// caller's coefficients must already include the DC offset (INTRA DC of
+/// 1024 corresponds to a spatial mean of 128).
 pub fn idct_intra(coeffs: &[i32; 64], out: &mut [u8; 64]) {
-    let mut f = [0.0f32; 64];
-    for i in 0..64 {
-        f[i] = coeffs[i] as f32;
-    }
-    idct8x8(&mut f);
-    for i in 0..64 {
-        let v = f[i].round() as i32;
-        out[i] = v.clamp(0, 255) as u8;
+    for (o, v) in out.iter_mut().zip(crate::simple_idct::simple_idct(coeffs)) {
+        *o = v.clamp(0, 255) as u8;
     }
 }
 
