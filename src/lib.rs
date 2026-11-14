@@ -118,14 +118,18 @@ pub mod bch;
 pub mod block;
 pub mod decoder;
 pub mod encoder;
+#[doc(hidden)]
 pub mod fdct;
 #[doc(hidden)]
 pub mod gob;
 pub mod hrd;
+#[doc(hidden)]
 pub mod idct;
+#[doc(hidden)]
 pub mod mb;
 pub mod multipoint;
 pub mod picture;
+#[doc(hidden)]
 pub mod quant;
 pub mod rtcp;
 pub mod rtp;
@@ -133,6 +137,7 @@ pub mod sdp;
 /// FFmpeg's C simple IDCT (LGPL-2.1-or-later, see the file's notice),
 /// which [`idct::idct_intra`] and [`idct::idct_signed`] reconstruct with.
 pub mod simple_idct;
+#[doc(hidden)]
 pub mod start_code;
 #[doc(hidden)]
 pub mod tables;

@@ -7,8 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `H261FmtpParams::with_cif` / `with_qcif` / `with_d` and `SdesChunk::new`.
+- `Decoder::output_video_dimensions` / `output_pixel_format`: the QCIF or
+  CIF size of the picture last returned (before the first, the next
+  queued one), `Yuv420P`. A QCIF ↔ CIF change is reported with the first
+  picture that has it.
+
 ### Changed
 
+- `#[non_exhaustive]` on the enums `AnnexDTrError`, `DisplayAction`,
+  `PictureCapStatus`, `RtcpError`, `RtcpPacket`, `RtpError`, `SdesItem`,
+  `SdpError` and `SequenceError`, and on the records `AppPacket`,
+  `ByePacket`, `DecodedMultiframe`, `DelayMeter`, `DelaySummary`,
+  `FastUpdateResponse`, `H261FmtpParams`, `HrdParams`, `HrdTrace`,
+  `MarkLevels`, `Picture`, `PictureHeader`, `Ptype`, `RtcpReport`,
+  `RtpFixedHeader`, `RtpMap`, `RtpPacket`, `SdesChunk`, `SdesPacket`,
+  `StartCode` and `SubImagePlanes`. `SourceFormat`, `MarkState` and
+  `SubImageIndex` (fixed bit fields) stay exhaustive, as do the fixed RTP /
+  RTCP wire records callers fill in (`H261RtpHeader`, `H261RtpPayload`,
+  `SenderInfo`, `ReceptionReportBlock`).
+- `#[doc(hidden)]` on the internal `fdct`, `idct`, `quant`, `mb` and
+  `start_code` modules.
+- edition 2024, MSRV 1.95
 - **Blocks are reconstructed with FFmpeg's integer IDCT** (PearTube fork;
   `src/simple_idct.rs`, a port of FFmpeg 2da55bf
   `libavcodec/simple_idct_template.c`, LGPL-2.1-or-later; the crate is now
@@ -17,13 +39,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   encoder's reconstruction alike. Every frame now equals FFmpeg's decode
   (its C path, `-idct simple`): a 90-frame QCIF clip and FFmpeg encodes at
   QCIF and CIF, high and low quality. Before, no frame matched.
-
-### Added
-
-- `Decoder::output_video_dimensions` / `output_pixel_format`: the QCIF or
-  CIF size of the picture last returned (before the first, the next
-  queued one), `Yuv420P`. A QCIF ↔ CIF change is reported with the first
-  picture that has it.
 
 ### Fixed
 

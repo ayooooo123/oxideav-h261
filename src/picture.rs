@@ -47,6 +47,7 @@ impl SourceFormat {
 
 /// Parsed H.261 picture header.
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub struct PictureHeader {
     pub temporal_reference: u8,
     pub split_screen: bool,
@@ -181,8 +182,8 @@ mod tests {
         append(&mut bits, 1, 1); // HI_RES off
         append(&mut bits, 0, 1); // spare
         append(&mut bits, 0, 1); // PEI = 0
-                                 // Pad to byte boundary with zeros.
-        while bits.len() % 8 != 0 {
+        // Pad to byte boundary with zeros.
+        while !bits.len().is_multiple_of(8) {
             bits.push(0);
         }
         let mut out = Vec::new();

@@ -153,6 +153,7 @@ pub const MAX_REPORT_BLOCKS: usize = 31;
 
 /// RTCP build / parse error.
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum RtcpError {
     /// More than 31 reception report blocks were supplied — they cannot be
     /// encoded into the 5-bit RC field of a single packet (RFC 3550 §6.4.1
@@ -335,6 +336,7 @@ impl ReceptionReportBlock {
 
 /// A parsed RTCP report (SR or RR), as produced by [`parse_report`].
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct RtcpReport {
     /// PT code: [`PT_SR`] (200) or [`PT_RR`] (201).
     pub packet_type: u8,
@@ -560,6 +562,7 @@ pub mod sdes_type {
 /// `value` string that fills the rest of the item, so it is modelled as a
 /// distinct variant rather than a single text blob.
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SdesItem {
     /// Canonical name (`user@host` / `host`), §6.5.1. Mandatory in every
     /// compound packet (§6.1).
@@ -664,6 +667,7 @@ impl SdesItem {
 /// items. On the wire the item list is terminated by a zero type byte and the
 /// chunk is padded with null octets to the next 32-bit boundary.
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct SdesChunk {
     /// The SSRC/CSRC these items describe.
     pub ssrc: u32,
@@ -672,6 +676,11 @@ pub struct SdesChunk {
 }
 
 impl SdesChunk {
+    /// Build a chunk carrying `items` for source `ssrc`.
+    pub fn new(ssrc: u32, items: Vec<SdesItem>) -> Self {
+        SdesChunk { ssrc, items }
+    }
+
     /// On-wire length of this chunk: 4 (SSRC) + items + the END byte, rounded
     /// up to the next multiple of 4 (RFC 3550 §6.5 32-bit chunk alignment).
     fn padded_len(&self) -> usize {
@@ -688,7 +697,7 @@ impl SdesChunk {
         // END marker (item type 0) terminates the list, then pad with null
         // octets to the next 32-bit boundary (§6.5).
         buf.push(sdes_type::END);
-        while (buf.len() - start) % 4 != 0 {
+        while !(buf.len() - start).is_multiple_of(4) {
             buf.push(0);
         }
     }
@@ -730,6 +739,7 @@ pub fn build_sdes(chunks: &[SdesChunk]) -> Result<Vec<u8>, RtcpError> {
 
 /// A parsed RTCP SDES packet (RFC 3550 §6.5).
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct SdesPacket {
     /// The chunks, in wire order.
     pub chunks: Vec<SdesChunk>,
@@ -814,7 +824,7 @@ pub fn parse_sdes(buf: &[u8]) -> Result<SdesPacket, RtcpError> {
             }
         }
         // Advance over null padding to the next 32-bit boundary.
-        while (off - RTCP_HEADER_FIXED_LEN) % 4 != 0 {
+        while !(off - RTCP_HEADER_FIXED_LEN).is_multiple_of(4) {
             if off >= body_end {
                 break;
             }
@@ -840,6 +850,7 @@ pub fn build_cname_sdes(ssrc: u32, cname: &str) -> Result<Vec<u8>, RtcpError> {
 
 /// A parsed RTCP BYE packet (RFC 3550 §6.6).
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct ByePacket {
     /// The SSRC/CSRC identifiers leaving the session (1..=31; zero is valid
     /// but useless per §6.6).
@@ -862,10 +873,10 @@ pub fn build_bye(sources: &[u32], reason: Option<&str>) -> Result<Vec<u8>, RtcpE
         });
     }
     let reason_bytes = reason.map(str::as_bytes);
-    if let Some(r) = reason_bytes {
-        if r.len() > MAX_TEXT_LEN {
-            return Err(RtcpError::TextTooLong { len: r.len() });
-        }
+    if let Some(r) = reason_bytes
+        && r.len() > MAX_TEXT_LEN
+    {
+        return Err(RtcpError::TextTooLong { len: r.len() });
     }
     // Body so far: SC * 4 (SSRC list) + optional (1 length byte + reason).
     let mut body = sources.len() * 4;
@@ -970,6 +981,7 @@ pub fn parse_bye(buf: &[u8]) -> Result<ByePacket, RtcpError> {
 
 /// A parsed RTCP APP (Application-Defined) packet (RFC 3550 §6.7).
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct AppPacket {
     /// 5-bit subtype field. Per §6.7, "may be used as a subtype to allow a
     /// set of APP packets to be defined under one unique name, or for any
@@ -1005,7 +1017,7 @@ pub fn build_app(subtype: u8, ssrc: u32, name: &[u8], data: &[u8]) -> Result<Vec
     if name.len() != APP_NAME_LEN {
         return Err(RtcpError::AppNameWrongLength { len: name.len() });
     }
-    if data.len() % 4 != 0 {
+    if !data.len().is_multiple_of(4) {
         return Err(RtcpError::AppDataNotAligned { len: data.len() });
     }
     // Header (4) + SSRC (4) + name (4) + data.
@@ -1079,6 +1091,7 @@ pub fn parse_app(buf: &[u8]) -> Result<AppPacket, RtcpError> {
 
 /// One sub-packet recovered from a compound RTCP packet by [`parse_compound`].
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum RtcpPacket {
     /// SR / RR report (PT 200 / 201).
     Report(RtcpReport),

@@ -137,6 +137,7 @@ impl SubImageIndex {
 /// Error returned by [`parse_still_image_tr`] when a 5-bit TR field
 /// cannot be interpreted as an Annex D still-image temporal reference.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum AnnexDTrError {
     /// The TR's top 3 bits are non-zero. §D.3 requires the three
     /// higher bits of TR to be set to 0 when `HI_RES = 0`.
@@ -225,8 +226,14 @@ pub fn subimage_origin(idx: SubImageIndex) -> (u32, u32) {
 /// even (a multiple of the video format size), so the only callers that
 /// can hit those panics have mismatched their own dimensions.
 pub fn subsample_plane(still_plane: &[u8], still_w: u32, still_h: u32) -> [Vec<u8>; 4] {
-    assert!(still_w % 2 == 0, "Annex D still-image width must be even");
-    assert!(still_h % 2 == 0, "Annex D still-image height must be even");
+    assert!(
+        still_w.is_multiple_of(2),
+        "Annex D still-image width must be even"
+    );
+    assert!(
+        still_h.is_multiple_of(2),
+        "Annex D still-image height must be even"
+    );
     let expected = (still_w as usize) * (still_h as usize);
     assert_eq!(
         still_plane.len(),
@@ -318,6 +325,7 @@ pub fn subsample_still_image(
 /// element type of the [`subsample_still_image`] return value and as
 /// the input to [`reassemble_still_image`].
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct SubImagePlanes {
     /// Luma plane, `video_w * video_h` bytes (e.g. 176 × 144 for QCIF).
     pub y: Vec<u8>,
@@ -338,8 +346,14 @@ pub struct SubImagePlanes {
 ///
 /// Panics on a dimension mismatch (symmetric with [`subsample_plane`]).
 pub fn reassemble_plane(subs: &[Vec<u8>; 4], still_w: u32, still_h: u32) -> Vec<u8> {
-    assert!(still_w % 2 == 0, "Annex D still-image width must be even");
-    assert!(still_h % 2 == 0, "Annex D still-image height must be even");
+    assert!(
+        still_w.is_multiple_of(2),
+        "Annex D still-image width must be even"
+    );
+    assert!(
+        still_h.is_multiple_of(2),
+        "Annex D still-image height must be even"
+    );
     let sub_w = (still_w / 2) as usize;
     let sub_h = (still_h / 2) as usize;
     for (i, p) in subs.iter().enumerate() {
